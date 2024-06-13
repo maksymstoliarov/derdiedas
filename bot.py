@@ -28,7 +28,7 @@ def save_message(message):
         # if words.json is absent, create it
         if not os.path.exists(JSON_FILE_PATH):
             with open(JSON_FILE_PATH, 'w') as file:
-                json.dump({}, file)
+                json.dump([], file)
         else:
             # if words.json is not empty, read it
             if os.path.getsize(JSON_FILE_PATH) > 0:
