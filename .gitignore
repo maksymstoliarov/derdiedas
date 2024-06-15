@@ -6,4 +6,5 @@ __pycache__/
 nohup.out
 
 words.json
+base_words.json
 chat_ids.json

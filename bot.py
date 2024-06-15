@@ -11,6 +11,7 @@ load_dotenv()
 
 bot = telebot.TeleBot(os.getenv('TELEGRAM_TOKEN'))
 quiz_mode = False
+QUIZ_QUESTIONS = 10
 
 # Sample quiz questions
 # quiz = [
@@ -68,12 +69,12 @@ def quiz_command(message):
 # Function to send a question
 def send_question(chat_id):
     global quiz
-    all_words = W.get_all_words(chat_id)
+    all_words = W.get_all_base_words()
     # randomize the words order
     random.shuffle(all_words)
     current_question = user_data[chat_id]["current_question"] + 1
 
-    quiz = all_words[:2]
+    quiz = all_words[:QUIZ_QUESTIONS]
     total_questions = len(quiz)
 
     question_data = quiz[user_data[chat_id]["current_question"]]
@@ -112,6 +113,7 @@ def handle_answer(message):
         send_question(chat_id)
     else:
         score = user_data[chat_id]["score"]
+        # TODO: add mistakes to the message
         bot.send_message(chat_id, f"Quiz finished! Your score is <b>{score}/{len(quiz)}</b>", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
         del user_data[chat_id]
 
@@ -129,8 +131,20 @@ def save_message(message):
         user_id = message.from_user.id
         existing_word = W.is_word_present(word, user_id)
 
+        # Find the word in the user words
         if existing_word:
             send_message(message.chat.id, f'<b>{existing_word["article"]} {existing_word["word"]}</b> - {existing_word["translation"]}')
+            return
+
+        # Find the word in the base words
+        existing_base_word = W.is_word_present_in_base(word)
+        if existing_base_word:
+            existing_base_word['user_id'] = user_id
+            existing_base_word['username'] = message.from_user.username
+            existing_base_word['date'] = message.date
+
+            W.add_word(existing_base_word)
+            send_message(message.chat.id, f"<b>{existing_base_word['article']} {word}</b> - {existing_base_word['translation']}\n<i>learned new word1</i> ✅")
             return
 
         # Request the api to get the article and translation of the word
@@ -141,14 +155,16 @@ def save_message(message):
             send_message(message.chat.id, f"{word} <i>not found</i>")
             return
 
-        # Display message to user with article and translation
-        send_message(message.chat.id, f"<b>{word_dict['article']} {word}</b> - {word_dict['translation']}\n<i>learned new word</i> ✅")
+        W.add_word_base(word_dict)
 
         word_dict['user_id'] = user_id
         word_dict['username'] = message.from_user.username
         word_dict['date'] = message.date
 
         W.add_word(word_dict)
+
+        # Display message to user with article and translation
+        send_message(message.chat.id, f"<b>{word_dict['article']} {word}</b> - {word_dict['translation']}\n<i>learned new word2</i> ✅")
     except Exception as e:
         send_message(message.chat.id, "Error")
         print(f'Error: {e}')
