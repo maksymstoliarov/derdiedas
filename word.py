@@ -100,3 +100,12 @@ def get_daily_words(user_id):
             daily_words.append(w)
 
     return daily_words
+
+
+def get_all_words(user_id):
+    all_words = []
+    for w in words:
+        if w['user_id'] == user_id:
+            all_words.append(w)
+
+    return all_words

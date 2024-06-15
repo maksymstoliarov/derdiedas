@@ -1,12 +1,38 @@
 import telebot
+from telebot import types
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import os
 import word as W
 from dotenv import load_dotenv
 import chat
+import random
 
 load_dotenv()
 
 bot = telebot.TeleBot(os.getenv('TELEGRAM_TOKEN'))
+quiz_mode = False
+
+# Sample quiz questions
+# quiz = [
+#     {
+#         "question": "What is the capital of France?",
+#         "options": ["Berlin", "Paris", "Rome"],
+#         "answer": "Paris"
+#     },
+#     {
+#         "question": "What is 2 + 2?",
+#         "options": ["3", "4", "5"],
+#         "answer": "4"
+#     },
+#     {
+#         "question": "What is the largest ocean on Earth?",
+#         "options": ["Atlantic", "Indian", "Pacific"],
+#         "answer": "Pacific"
+#     }
+# ]
+
+user_data = {}
+quiz = []
 
 
 def run():
@@ -24,11 +50,81 @@ def send_welcome(message):
     chat.add_chat_id(message.chat.id, message.from_user.id)
 
 
+@bot.message_handler(commands=['statistic'])
+def send_statistic(message):
+    user_id = message.from_user.id
+    daily_words = W.get_daily_words(user_id)
+    all_words = W.get_all_words(user_id)
+    send_message(message.chat.id, f"Today added <b>{len(daily_words)}</b> words. All time <b>{len(all_words)}</b> words.")
+
+
+# Quiz command handler
+@bot.message_handler(commands=['quiz'])
+def quiz_command(message):
+    user_data[message.chat.id] = {"current_question": 0, "score": 0}
+    send_question(message.chat.id)
+
+
+# Function to send a question
+def send_question(chat_id):
+    global quiz
+    all_words = W.get_all_words(chat_id)
+    # randomize the words order
+    random.shuffle(all_words)
+    current_question = user_data[chat_id]["current_question"] + 1
+
+    quiz = all_words[:2]
+    total_questions = len(quiz)
+
+    question_data = quiz[user_data[chat_id]["current_question"]]
+    question = f'{current_question}/{total_questions} <b>{question_data["word"]}</b>'
+    # options = question_data["options"]
+
+    # markup = types.ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True, row_width=3)
+    # for article in W.ARTICLES:
+    #     markup.add(types.KeyboardButton(article))
+
+    markup = types.ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
+    button_row = [types.KeyboardButton(article) for article in W.ARTICLES]
+    markup.row(*button_row)
+
+    bot.send_message(chat_id, question, reply_markup=markup, parse_mode='HTML')
+
+
+# Callback query handler
+@bot.message_handler(func=lambda message: message.chat.id in user_data and "current_question" in user_data[message.chat.id])
+def handle_answer(message):
+    chat_id = message.chat.id
+    answer = message.text
+    current_question = user_data[chat_id]["current_question"]
+    correct_answer = quiz[current_question]["article"]
+    word = quiz[current_question]["word"]
+
+    if answer == correct_answer:
+        user_data[chat_id]["score"] += 1
+        send_message(chat_id, f"✅ <b>{correct_answer} {word}</b>")
+    else:
+        send_message(chat_id, f"❌ <b>{correct_answer} {word}</b>")
+
+    user_data[chat_id]["current_question"] += 1
+
+    if user_data[chat_id]["current_question"] < len(quiz):
+        send_question(chat_id)
+    else:
+        score = user_data[chat_id]["score"]
+        bot.send_message(chat_id, f"Quiz finished! Your score is <b>{score}/{len(quiz)}</b>", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
+        del user_data[chat_id]
+
+
 @bot.message_handler(func=lambda message: True)
 def save_message(message):
     try:
         word = message.text
         word = W.normalize_word(word)
+
+        if not word:
+            send_message(message.chat.id, "Invalid word")
+            return
 
         user_id = message.from_user.id
         existing_word = W.is_word_present(word, user_id)
@@ -46,7 +142,7 @@ def save_message(message):
             return
 
         # Display message to user with article and translation
-        send_message(message.chat.id, f"<b>{word_dict['article']} {word}</b> - {word_dict['translation']}")
+        send_message(message.chat.id, f"<b>{word_dict['article']} {word}</b> - {word_dict['translation']}\n<i>learned new word</i> ✅")
 
         word_dict['user_id'] = user_id
         word_dict['username'] = message.from_user.username
