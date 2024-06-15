@@ -1,6 +1,5 @@
 import telebot
 from telebot import types
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import os
 import word as W
 from dotenv import load_dotenv
@@ -12,26 +11,6 @@ load_dotenv()
 bot = telebot.TeleBot(os.getenv('TELEGRAM_TOKEN'))
 quiz_mode = False
 QUIZ_QUESTIONS = 10
-
-# Sample quiz questions
-# quiz = [
-#     {
-#         "question": "What is the capital of France?",
-#         "options": ["Berlin", "Paris", "Rome"],
-#         "answer": "Paris"
-#     },
-#     {
-#         "question": "What is 2 + 2?",
-#         "options": ["3", "4", "5"],
-#         "answer": "4"
-#     },
-#     {
-#         "question": "What is the largest ocean on Earth?",
-#         "options": ["Atlantic", "Indian", "Pacific"],
-#         "answer": "Pacific"
-#     }
-# ]
-
 user_data = {}
 quiz = []
 
@@ -47,7 +26,7 @@ def send_message(chat_id, message):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    send_message(message.chat.id, "Hello, send me german word")
+    send_message(message.chat.id, "Hello, send me German word to get article and translation or run quiz with /quiz command")
     chat.add_chat_id(message.chat.id, message.from_user.id)
 
 
@@ -56,7 +35,8 @@ def send_statistic(message):
     user_id = message.from_user.id
     daily_words = W.get_daily_words(user_id)
     all_words = W.get_all_words(user_id)
-    send_message(message.chat.id, f"Today added <b>{len(daily_words)}</b> words. All time <b>{len(all_words)}</b> words.")
+    base_words = W.get_all_base_words()
+    send_message(message.chat.id, f"Today learned: <b>{len(daily_words)}</b> words\nAll time learned: <b>{len(all_words)}</b> words\nTotal in database: <b>{len(base_words)}</b> words")
 
 
 # Quiz command handler
@@ -97,6 +77,11 @@ def send_question(chat_id):
 def handle_answer(message):
     chat_id = message.chat.id
     answer = message.text
+
+    if answer not in W.ARTICLES:
+        send_message(chat_id, "Invalid article")
+        return
+
     current_question = user_data[chat_id]["current_question"]
     correct_answer = quiz[current_question]["article"]
     word = quiz[current_question]["word"]
@@ -144,7 +129,7 @@ def save_message(message):
             existing_base_word['date'] = message.date
 
             W.add_word(existing_base_word)
-            send_message(message.chat.id, f"<b>{existing_base_word['article']} {word}</b> - {existing_base_word['translation']}\n<i>learned new word1</i> ✅")
+            send_message(message.chat.id, f"<b>{existing_base_word['article']} {word}</b> - {existing_base_word['translation']}\n<i>learned new word</i> ✅")
             return
 
         # Request the api to get the article and translation of the word
@@ -164,7 +149,7 @@ def save_message(message):
         W.add_word(word_dict)
 
         # Display message to user with article and translation
-        send_message(message.chat.id, f"<b>{word_dict['article']} {word}</b> - {word_dict['translation']}\n<i>learned new word2</i> ✅")
+        send_message(message.chat.id, f"<b>{word_dict['article']} {word}</b> - {word_dict['translation']}\n<i>learned new word</i> ✅")
     except Exception as e:
         send_message(message.chat.id, "Error")
         print(f'Error: {e}')
