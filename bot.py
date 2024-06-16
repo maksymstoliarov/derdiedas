@@ -24,9 +24,9 @@ def send_message(chat_id, message):
     bot.send_message(chat_id, message, parse_mode='HTML')
 
 
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=['help'])
 def send_welcome(message):
-    bot.send_message(message.chat.id, "<b>Hello</b>\nSend German word to get article and translation\n/quiz - Start quiz\n/mistakes - Review your mistakes\nDeveloper @max_stoliarov", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
+    bot.send_message(message.chat.id, "<b>Hello</b>\nSend German word to get article and translation\n/quiz - Start quiz\n/mistakes - Review your mistakes\n/statistic - View your stats\nDeveloper @max_stoliarov", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
     chat.add_chat_id(message.chat.id)
     stop_quiz(message.chat.id)
 
@@ -57,7 +57,7 @@ def send_statistic(message):
 
 
 # Quiz command handler
-@bot.message_handler(commands=['quiz'])
+@bot.message_handler(commands=['start'])
 def quiz_command(message):
     global quiz
     chat_id = message.chat.id
