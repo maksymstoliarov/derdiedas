@@ -11,8 +11,8 @@ def send_daily_summary():
     for chat_id in chat.chat_ids:
         daily_words = word.get_daily_words(chat_id)
         count = len(daily_words)
-        daily_words_string = ', '.join([f"<b>{w['article']} {w['word']}</b>" for w in daily_words])
-        summary = f"You have learned <b>{count}</b> new words today: {daily_words_string}"
+        # daily_words_string = ', '.join([f"<b>{w['article']} {w['word']}</b>" for w in daily_words])
+        summary = f"You have learned <b>{count}</b> words today"
         bot.send_message(chat_id, summary)
 
 
