@@ -12,7 +12,7 @@ bot = telebot.TeleBot(os.getenv('TELEGRAM_TOKEN'))
 quiz_mode = False
 QUIZ_QUESTIONS = 10
 user_data = {}
-quiz = []
+quiz = {}
 
 
 def run():
@@ -57,21 +57,26 @@ def send_statistic(message):
 # Quiz command handler
 @bot.message_handler(commands=['quiz'])
 def quiz_command(message):
-    user_data[message.chat.id] = {"current_question": 0, "score": 0, 'mistakes': False}
-    send_question(message.chat.id)
+    global quiz
+    chat_id = message.chat.id
+    user_data[chat_id] = {"current_question": 0, "score": 0, 'mistakes': False}
+    quiz[chat_id] = W.get_quiz_words(chat_id, QUIZ_QUESTIONS)
+    send_question(chat_id)
 
 
 # Mistakes quiz command handler
 @bot.message_handler(commands=['mistakes'])
 def mistakes_command(message):
-    user_id = message.from_user.id
-    mistakes = W.get_unique_mistakes(user_id, QUIZ_QUESTIONS)
+    global quiz
+    chat_id = message.chat.id
+    mistakes = W.get_unique_mistakes(chat_id, QUIZ_QUESTIONS)
     if not mistakes:
-        send_message(message.chat.id, "No mistakes")
+        send_message(chat_id, "No mistakes")
         return
 
-    user_data[message.chat.id] = {"current_question": 0, "score": 0, 'mistakes': True}
-    send_question(message.chat.id)
+    user_data[chat_id] = {"current_question": 0, "score": 0, 'mistakes': True}
+    quiz[chat_id] = W.get_unique_mistakes(chat_id, QUIZ_QUESTIONS)
+    send_question(chat_id)
 
 
 # Function to send a question
@@ -79,16 +84,9 @@ def send_question(chat_id):
     global quiz
     current_question = user_data[chat_id]["current_question"] + 1
 
-    mistakes = user_data[chat_id].get('mistakes', False)
+    total_questions = len(quiz[chat_id])
 
-    if not mistakes:
-        quiz = W.get_quiz_words(chat_id, QUIZ_QUESTIONS)
-    else:
-        quiz = W.get_unique_mistakes(chat_id, QUIZ_QUESTIONS)
-
-    total_questions = len(quiz)
-
-    question_data = quiz[user_data[chat_id]["current_question"]]
+    question_data = quiz[chat_id][user_data[chat_id]["current_question"]]
     question = f'{current_question}/{total_questions} <b>{question_data["word"]}</b>'
 
     markup = types.ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
@@ -103,7 +101,7 @@ def send_question(chat_id):
 def handle_answer(message):
     chat_id = message.chat.id
     # prevent answering finished quiz
-    if user_data[chat_id]["current_question"] >= len(quiz):
+    if user_data[chat_id]["current_question"] >= len(quiz[chat_id]):
         print("Quiz finished")
         return
 
@@ -121,9 +119,9 @@ def handle_answer(message):
         return
 
     current_question = user_data[chat_id]["current_question"]
-    correct_answer = quiz[current_question]["article"]
-    word = quiz[current_question]["word"]
-    translation = quiz[current_question]["translation"]
+    correct_answer = quiz[chat_id][current_question]["article"]
+    word = quiz[chat_id][current_question]["word"]
+    translation = quiz[chat_id][current_question]["translation"]
 
     # if correct answer is array, check if the answer is in the array
     if isinstance(correct_answer, list):
@@ -132,7 +130,7 @@ def handle_answer(message):
             send_message(chat_id, f"✅ <b>{correct_answer[0]}/{correct_answer[1]} {word}</b> - {translation} ")
         else:
             send_message(chat_id, f"❌ <b>{correct_answer[0]}/{correct_answer[1]} {word}</b> - {translation}")
-            new_mistake = quiz[current_question]
+            new_mistake = quiz[chat_id][current_question]
             new_mistake['user_id'] = chat_id
             new_mistake['username'] = message.from_user.username
             new_mistake['date'] = message.date
@@ -143,7 +141,7 @@ def handle_answer(message):
             send_message(chat_id, f"✅ <b>{correct_answer} {word}</b> - {translation}")
         else:
             send_message(chat_id, f"❌ <b>{correct_answer} {word}</b> - {translation}")
-            new_mistake = quiz[current_question]
+            new_mistake = quiz[chat_id][current_question]
             new_mistake['user_id'] = chat_id
             new_mistake['username'] = message.from_user.username
             new_mistake['date'] = message.date
@@ -151,16 +149,16 @@ def handle_answer(message):
 
     existing_base_word = W.is_word_present(word, chat_id)
     if not existing_base_word:
-        new_word = quiz[current_question]
+        new_word = quiz[chat_id][current_question]
         new_word['user_id'] = chat_id
         new_word['username'] = message.from_user.username
         new_word['date'] = message.date
-        W.add_word(quiz[current_question])
+        W.add_word(quiz[chat_id][current_question])
 
     user_data[chat_id]["current_question"] += 1
     del user_data[chat_id]["answered"]
 
-    if user_data[chat_id]["current_question"] < len(quiz):
+    if user_data[chat_id]["current_question"] < len(quiz[chat_id]):
         send_question(chat_id)
     else:
         score = user_data[chat_id]["score"]
@@ -169,7 +167,7 @@ def handle_answer(message):
             finish_message = "Quiz finished"
         else:
             finish_message = "Mistakes review finished"
-        bot.send_message(chat_id, f"{finish_message}! Your score is <b>{score}/{len(quiz)}</b>", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
+        bot.send_message(chat_id, f"{finish_message}! Your score is <b>{score}/{len(quiz[chat_id])}</b>", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
         del user_data[chat_id]
 
 
