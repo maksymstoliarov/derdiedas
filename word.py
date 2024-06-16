@@ -184,6 +184,26 @@ def get_all_base_words():
     return base_words
 
 
+def get_quiz_words(user_id, limit=10):
+    user_words = get_all_words(user_id)
+    quiz_words = []
+    for w in base_words:
+        found = False
+        for uw in user_words:
+            if w['word'] == uw['word']:
+                found = True
+                break
+
+        if found:
+            continue
+
+        quiz_words.append(w)
+        if len(quiz_words) == limit:
+            return quiz_words
+
+    return quiz_words
+
+
 def find_duplicate_base_words():
     unique_words = []
     duplicate_words = []

@@ -49,11 +49,8 @@ def quiz_command(message):
 # Function to send a question
 def send_question(chat_id):
     global quiz
-    all_words = W.get_all_base_words()
-    # TODO: make progress, filter words if they already appeared in the quiz
-
     current_question = user_data[chat_id]["current_question"] + 1
-    quiz = all_words[:QUIZ_QUESTIONS]
+    quiz = W.get_quiz_words(chat_id, 2)
     total_questions = len(quiz)
 
     question_data = quiz[user_data[chat_id]["current_question"]]
