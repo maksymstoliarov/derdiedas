@@ -202,13 +202,37 @@ def get_all_base_words():
     return base_words
 
 
-def get_all_mistakes(user_id):
+def get_all_mistakes(user_id, limit=None):
     all_mistakes = []
     for w in mistakes:
         if w['user_id'] == user_id:
             all_mistakes.append(w)
+            if limit and len(all_mistakes) == limit:
+                return all_mistakes
 
     return all_mistakes
+
+
+def get_mistakes_statistic(user_id):
+    all_mistakes = get_all_mistakes(user_id)
+    unique_mistakes = []
+    for mistake in all_mistakes:
+        found = None
+        for index, unique_mistake in enumerate(unique_mistakes):
+            if mistake['word'] == unique_mistake['word']:
+                found = index
+                break
+
+        if not found:
+            mistake['count'] = 1
+            unique_mistakes.append(mistake)
+        else:
+            unique_mistakes[found]['count'] += 1
+
+    # sort by count
+    unique_mistakes = sorted(unique_mistakes, key=lambda x: x['count'], reverse=True)
+
+    return unique_mistakes
 
 
 def get_quiz_words(user_id, limit=10):

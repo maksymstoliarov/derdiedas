@@ -37,10 +37,10 @@ def send_statistic(message):
     all_words = W.get_all_words(user_id)
     base_words = W.get_all_base_words()
     progress_percent = round(len(all_words) / len(base_words) * 100)
-    all_mistakes = W.get_all_mistakes(user_id)
+    mistakes = W.get_mistakes_statistic(user_id)
     weakest_words = []
     weakest_words_count = 5
-    for mistake in all_mistakes:
+    for mistake in mistakes:
         if len(weakest_words) >= weakest_words_count:
             break
         weakest_words.append(f"<b>{mistake['article']} {mistake['word']}</b> - {mistake['translation']}")
@@ -57,7 +57,20 @@ def send_statistic(message):
 # Quiz command handler
 @bot.message_handler(commands=['quiz'])
 def quiz_command(message):
-    user_data[message.chat.id] = {"current_question": 0, "score": 0}
+    user_data[message.chat.id] = {"current_question": 0, "score": 0, 'mistakes': False}
+    send_question(message.chat.id)
+
+
+# Mistakes quiz command handler
+@bot.message_handler(commands=['mistakes'])
+def mistakes_command(message):
+    user_id = message.from_user.id
+    mistakes = W.get_all_mistakes(user_id)
+    if not mistakes:
+        send_message(message.chat.id, "No mistakes")
+        return
+
+    user_data[message.chat.id] = {"current_question": 0, "score": 0, 'mistakes': True}
     send_question(message.chat.id)
 
 
@@ -65,7 +78,14 @@ def quiz_command(message):
 def send_question(chat_id):
     global quiz
     current_question = user_data[chat_id]["current_question"] + 1
-    quiz = W.get_quiz_words(chat_id, QUIZ_QUESTIONS)
+
+    mistakes = user_data[chat_id].get('mistakes', False)
+
+    if not mistakes:
+        quiz = W.get_quiz_words(chat_id, QUIZ_QUESTIONS)
+    else:
+        quiz = W.get_all_mistakes(chat_id, QUIZ_QUESTIONS)
+
     total_questions = len(quiz)
 
     question_data = quiz[user_data[chat_id]["current_question"]]
