@@ -75,7 +75,9 @@ def mistakes_command(message):
         return
 
     user_data[chat_id] = {"current_question": 0, "score": 0, 'mistakes': True}
-    quiz[chat_id] = W.get_unique_mistakes(chat_id, QUIZ_QUESTIONS)
+    um = W.get_unique_mistakes(chat_id, QUIZ_QUESTIONS)
+    random.shuffle(um)
+    quiz[chat_id] = um
     send_question(chat_id)
 
 
