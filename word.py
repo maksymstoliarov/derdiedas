@@ -13,11 +13,13 @@ ARTICLES = ['der', 'die', 'das']
 # Path to the JSON file where messages will be saved
 JSON_FILE_PATH = 'words.json'
 BASE_WORDS_JSON_FILE_PATH = 'base_words.json'
+MISTAKES_JSON_FILE_PATH = 'mistakes.json'
 
 API_URL = 'https://der-artikel.de/'
 
 base_words = []
 words = []
+mistakes = []
 chat_ids = []
 
 
@@ -91,21 +93,30 @@ def upload_base_words():
 
 
 def load_words():
-    global words, base_words
-    # if words.json is absent, create it
+    global words, base_words, mistakes
+
+    # words
     if not os.path.exists(JSON_FILE_PATH):
         with open(JSON_FILE_PATH, 'w') as file:
             json.dump([], file)
     else:
-        # if words.json is not empty, read it
         if os.path.getsize(JSON_FILE_PATH) > 0:
             with open(JSON_FILE_PATH, 'r') as file:
                 words = json.load(file)
 
+    # base words
     upload_base_words()
-
     with open(BASE_WORDS_JSON_FILE_PATH, 'r') as file:
         base_words = json.load(file)
+
+    # mistakes
+    if not os.path.exists(MISTAKES_JSON_FILE_PATH):
+        with open(MISTAKES_JSON_FILE_PATH, 'w') as file:
+            json.dump([], file)
+    else:
+        if os.path.getsize(MISTAKES_JSON_FILE_PATH) > 0:
+            with open(MISTAKES_JSON_FILE_PATH, 'r') as file:
+                mistakes = json.load(file)
 
 
 def add_word(word_dict):
@@ -120,6 +131,13 @@ def add_word_base(word_dict):
     base_words.append(word_dict)
     with open(BASE_WORDS_JSON_FILE_PATH, 'w') as file:
         json.dump(base_words, file, indent=4)
+
+
+def add_mistake(word_dict):
+    global mistakes
+    mistakes.append(word_dict)
+    with open(MISTAKES_JSON_FILE_PATH, 'w') as file:
+        json.dump(mistakes, file, indent=4)
 
 
 def is_word_present(word: str, user_id: int):
@@ -182,6 +200,15 @@ def get_all_words(user_id):
 
 def get_all_base_words():
     return base_words
+
+
+def get_all_mistakes(user_id):
+    all_mistakes = []
+    for w in mistakes:
+        if w['user_id'] == user_id:
+            all_mistakes.append(w)
+
+    return all_mistakes
 
 
 def get_quiz_words(user_id, limit=10):

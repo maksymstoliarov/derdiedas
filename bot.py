@@ -26,8 +26,8 @@ def send_message(chat_id, message):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    send_message(message.chat.id, "Hello, send me German word to get article and translation or run quiz with /quiz command")
-    chat.add_chat_id(message.chat.id, message.from_user.id)
+    send_message(message.chat.id, "<b>Hello</b>\nSend me German word to get article and translation\nRun quiz with /quiz command")
+    chat.add_chat_id(message.chat.id)
 
 
 @bot.message_handler(commands=['statistic'])
@@ -36,7 +36,22 @@ def send_statistic(message):
     daily_words = W.get_daily_words(user_id)
     all_words = W.get_all_words(user_id)
     base_words = W.get_all_base_words()
-    send_message(message.chat.id, f"Today learned: <b>{len(daily_words)}</b> words\nAll time learned: <b>{len(all_words)}</b> words\nTotal in database: <b>{len(base_words)}</b> words")
+    progress_percent = round(len(all_words) / len(base_words) * 100)
+    all_mistakes = W.get_all_mistakes(user_id)
+    weakest_words = []
+    weakest_words_count = 5
+    for mistake in all_mistakes:
+        if len(weakest_words) >= weakest_words_count:
+            break
+        weakest_words.append(f"<b>{mistake['article']} {mistake['word']}</b> - {mistake['translation']}")
+
+    statistic_message = f"Progress: <b>{progress_percent}</b>%\nToday learned: <b>{len(daily_words)}</b> words\nAll time learned: <b>{len(all_words)}</b> words"
+
+    if weakest_words:
+        weakest_words = '\n'.join(weakest_words)
+        statistic_message += f"\n\nWeakest words:\n{weakest_words}"
+
+    send_message(message.chat.id, statistic_message)
 
 
 # Quiz command handler
@@ -50,7 +65,7 @@ def quiz_command(message):
 def send_question(chat_id):
     global quiz
     current_question = user_data[chat_id]["current_question"] + 1
-    quiz = W.get_quiz_words(chat_id, 2)
+    quiz = W.get_quiz_words(chat_id, QUIZ_QUESTIONS)
     total_questions = len(quiz)
 
     question_data = quiz[user_data[chat_id]["current_question"]]
@@ -102,12 +117,22 @@ def handle_answer(message):
             send_message(chat_id, f"✅ <b>{correct_answer[0]}/{correct_answer[1]} {word}</b> - {translation} ")
         else:
             send_message(chat_id, f"❌ <b>{correct_answer[0]}/{correct_answer[1]} {word}</b> - {translation}")
+            new_mistake = quiz[current_question]
+            new_mistake['user_id'] = chat_id
+            new_mistake['username'] = message.from_user.username
+            new_mistake['date'] = message.date
+            W.add_mistake(new_mistake)
     else:
         if answer == correct_answer:
             user_data[chat_id]["score"] += 1
             send_message(chat_id, f"✅ <b>{correct_answer} {word}</b> - {translation}")
         else:
             send_message(chat_id, f"❌ <b>{correct_answer} {word}</b> - {translation}")
+            new_mistake = quiz[current_question]
+            new_mistake['user_id'] = chat_id
+            new_mistake['username'] = message.from_user.username
+            new_mistake['date'] = message.date
+            W.add_mistake(new_mistake)
 
     existing_base_word = W.is_word_present(word, chat_id)
     if not existing_base_word:

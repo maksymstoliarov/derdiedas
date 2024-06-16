@@ -20,6 +20,11 @@ def load_chat_ids():
 
 def add_chat_id(chat_id: int):
     global chat_ids
+
+    # check if already present
+    if chat_id in chat_ids:
+        return
+
     chat_ids.append(chat_id)
     with open(CHAT_IDS_FILE_PATH, 'w') as file:
         json.dump(chat_ids, file, indent=4)
