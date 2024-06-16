@@ -28,6 +28,7 @@ def send_message(chat_id, message):
 def send_welcome(message):
     send_message(message.chat.id, "<b>Hello</b>\nSend me German word to get article and translation\nRun quiz with /quiz command")
     chat.add_chat_id(message.chat.id)
+    stop_quiz(message.chat.id)
 
 
 @bot.message_handler(commands=['statistic'])
@@ -52,6 +53,7 @@ def send_statistic(message):
         statistic_message += f"\n\nWeakest words:\n{weakest_words}"
 
     send_message(message.chat.id, statistic_message)
+    stop_quiz(message.chat.id)
 
 
 # Quiz command handler
@@ -96,6 +98,14 @@ def send_question(chat_id):
     markup.row(*button_row)
 
     bot.send_message(chat_id, question, reply_markup=markup, parse_mode='HTML')
+
+
+def stop_quiz(chat_id):
+    if chat_id in user_data:
+        del user_data[chat_id]
+
+    if chat_id in quiz:
+        del quiz[chat_id]
 
 
 # Callback query handler
@@ -170,7 +180,7 @@ def handle_answer(message):
         else:
             finish_message = "Mistakes review finished"
         bot.send_message(chat_id, f"{finish_message}! Your score is <b>{score}/{len(quiz[chat_id])}</b>", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
-        del user_data[chat_id]
+        stop_quiz(chat_id)
 
 
 @bot.message_handler(func=lambda message: True)
