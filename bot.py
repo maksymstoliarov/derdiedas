@@ -220,8 +220,6 @@ def save_message(message):
             send_message(message.chat.id, f"<b>{article} {word}</b> - {existing_base_word['translation']}\n<i>learned new word</i> ✅")
             return
 
-        # send_message(message.chat.id, f"{word} <i>not found</i>")
-
         # Request the api to get the article and translation of the word
         word_dict = W.request_word(word)
 
