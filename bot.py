@@ -37,13 +37,13 @@ def send_statistic(message):
     all_words = W.get_all_words(user_id)
     base_words = W.get_all_base_words()
     progress_percent = round(len(all_words) / len(base_words) * 100)
-    mistakes = W.get_mistakes_statistic(user_id)
+    m = W.get_mistakes_statistic(user_id)
     weakest_words = []
     weakest_words_count = 5
-    for mistake in mistakes:
+    for mistake in m:
         if len(weakest_words) >= weakest_words_count:
             break
-        weakest_words.append(f"<b>{mistake['article']} {mistake['word']}</b> - {mistake['translation']}")
+        weakest_words.append(f"{mistake['count']} <b>{mistake['article']} {mistake['word']}</b> - {mistake['translation']}")
 
     statistic_message = f"Progress: <b>{progress_percent}</b>%\nToday learned: <b>{len(daily_words)}</b> words\nAll time learned: <b>{len(all_words)}</b> words"
 
@@ -65,7 +65,7 @@ def quiz_command(message):
 @bot.message_handler(commands=['mistakes'])
 def mistakes_command(message):
     user_id = message.from_user.id
-    mistakes = W.get_all_mistakes(user_id)
+    mistakes = W.get_unique_mistakes(user_id, QUIZ_QUESTIONS)
     if not mistakes:
         send_message(message.chat.id, "No mistakes")
         return
@@ -84,17 +84,12 @@ def send_question(chat_id):
     if not mistakes:
         quiz = W.get_quiz_words(chat_id, QUIZ_QUESTIONS)
     else:
-        quiz = W.get_all_mistakes(chat_id, QUIZ_QUESTIONS)
+        quiz = W.get_unique_mistakes(chat_id, QUIZ_QUESTIONS)
 
     total_questions = len(quiz)
 
     question_data = quiz[user_data[chat_id]["current_question"]]
     question = f'{current_question}/{total_questions} <b>{question_data["word"]}</b>'
-    # options = question_data["options"]
-
-    # markup = types.ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True, row_width=3)
-    # for article in W.ARTICLES:
-    #     markup.add(types.KeyboardButton(article))
 
     markup = types.ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
     button_row = [types.KeyboardButton(article) for article in W.ARTICLES]
@@ -169,8 +164,12 @@ def handle_answer(message):
         send_question(chat_id)
     else:
         score = user_data[chat_id]["score"]
-        # TODO: add mistakes to the message
-        bot.send_message(chat_id, f"Quiz finished! Your score is <b>{score}/{len(quiz)}</b>", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
+        mistakes = user_data[chat_id].get('mistakes', False)
+        if not mistakes:
+            finish_message = "Quiz finished"
+        else:
+            finish_message = "Mistakes review finished"
+        bot.send_message(chat_id, f"{finish_message}! Your score is <b>{score}/{len(quiz)}</b>", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
         del user_data[chat_id]
 
 

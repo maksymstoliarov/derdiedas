@@ -70,7 +70,6 @@ def upload_base_words():
             # if there is / in article, split it and check each part to be in ARTICLES, and save them as article list
             article = article.split('/')
             if not all([a in ARTICLES for a in article]):
-                print(f'Article not found: {article}' + ' ' + word)
                 continue
 
             word_dict = {
@@ -117,6 +116,7 @@ def load_words():
         if os.path.getsize(MISTAKES_JSON_FILE_PATH) > 0:
             with open(MISTAKES_JSON_FILE_PATH, 'r') as file:
                 mistakes = json.load(file)
+                remove_count_from_mistakes()
 
 
 def add_word(word_dict):
@@ -213,7 +213,7 @@ def get_all_mistakes(user_id, limit=None):
     return all_mistakes
 
 
-def get_mistakes_statistic(user_id):
+def get_unique_mistakes(user_id, limit=None):
     all_mistakes = get_all_mistakes(user_id)
     unique_mistakes = []
     for mistake in all_mistakes:
@@ -223,9 +223,28 @@ def get_mistakes_statistic(user_id):
                 found = index
                 break
 
-        if not found:
-            mistake['count'] = 1
+        if found is None:
             unique_mistakes.append(mistake)
+            if limit and len(unique_mistakes) == limit:
+                return unique_mistakes
+
+    return unique_mistakes
+
+
+def get_mistakes_statistic(user_id):
+    all_mistakes = get_all_mistakes(user_id)
+    unique_mistakes = []
+    for _, mistake in enumerate(all_mistakes):
+        found = None
+        for index, unique_mistake in enumerate(unique_mistakes):
+            if mistake['word'] == unique_mistake['word']:
+                found = index
+                break
+
+        if found is None:
+            mistake_copy = mistake.copy()
+            mistake_copy['count'] = 1
+            unique_mistakes.append(mistake_copy)
         else:
             unique_mistakes[found]['count'] += 1
 
@@ -296,3 +315,12 @@ def remove_duplicate_words(user_id):
 
     with open(JSON_FILE_PATH, 'w') as file:
         json.dump(words, file, indent=4)
+
+
+def remove_count_from_mistakes():
+    for mistake in mistakes:
+        if 'count' in mistake:
+            mistake.pop('count', None)
+
+    with open(MISTAKES_JSON_FILE_PATH, 'w') as file:
+        json.dump(mistakes, file, indent=4)
