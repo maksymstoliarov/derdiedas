@@ -96,20 +96,29 @@ def handle_answer(message):
     current_question = user_data[chat_id]["current_question"]
     correct_answer = quiz[current_question]["article"]
     word = quiz[current_question]["word"]
+    translation = quiz[current_question]["translation"]
 
     # if correct answer is array, check if the answer is in the array
     if isinstance(correct_answer, list):
         if answer in correct_answer:
             user_data[chat_id]["score"] += 1
-            send_message(chat_id, f"✅ <b>{correct_answer[0]}/{correct_answer[1]} {word}</b>")
+            send_message(chat_id, f"✅ <b>{correct_answer[0]}/{correct_answer[1]} {word}</b> - {translation} ")
         else:
-            send_message(chat_id, f"❌ <b>{correct_answer[0]}/{correct_answer[1]} {word}</b>")
+            send_message(chat_id, f"❌ <b>{correct_answer[0]}/{correct_answer[1]} {word}</b> - {translation}")
     else:
         if answer == correct_answer:
             user_data[chat_id]["score"] += 1
-            send_message(chat_id, f"✅ <b>{correct_answer} {word}</b>")
+            send_message(chat_id, f"✅ <b>{correct_answer} {word}</b> - {translation}")
         else:
-            send_message(chat_id, f"❌ <b>{correct_answer} {word}</b>")
+            send_message(chat_id, f"❌ <b>{correct_answer} {word}</b> - {translation}")
+
+    existing_base_word = W.is_word_present(word, chat_id)
+    if not existing_base_word:
+        new_word = quiz[current_question]
+        new_word['user_id'] = chat_id
+        new_word['username'] = message.from_user.username
+        new_word['date'] = message.date
+        W.add_word(quiz[current_question])
 
     user_data[chat_id]["current_question"] += 1
     del user_data[chat_id]["answered"]
