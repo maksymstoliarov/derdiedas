@@ -26,7 +26,7 @@ def send_message(chat_id, message):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.send_message(message.chat.id, "<b>Hello</b>\nSend German word to get article and translation\nRun quiz with /quiz command\nReview mistakes with /mistakes command\nDeveloper @max_stoliarov", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
+    bot.send_message(message.chat.id, "<b>Hello</b>\nSend German word to get article and translation\n/quiz - Start quiz\n/mistakes - Review your mistakes\nDeveloper @max_stoliarov", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
     chat.add_chat_id(message.chat.id)
     stop_quiz(message.chat.id)
 
