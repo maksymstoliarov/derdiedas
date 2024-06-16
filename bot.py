@@ -26,7 +26,7 @@ def send_message(chat_id, message):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    send_message(message.chat.id, "<b>Hello</b>\nSend me German word to get article and translation\nRun quiz with /quiz command")
+    bot.send_message(message.chat.id, "<b>Hello</b>\nSend German word to get article and translation\nRun quiz with /quiz command\nReview mistakes with /mistakes command", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
     chat.add_chat_id(message.chat.id)
     stop_quiz(message.chat.id)
 
@@ -52,7 +52,7 @@ def send_statistic(message):
         weakest_words = '\n'.join(weakest_words)
         statistic_message += f"\n\nWeakest words:\n{weakest_words}"
 
-    send_message(message.chat.id, statistic_message)
+    bot.send_message(message.chat.id, statistic_message, reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
     stop_quiz(message.chat.id)
 
 
