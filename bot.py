@@ -75,7 +75,19 @@ def send_question(chat_id):
 @bot.message_handler(func=lambda message: message.chat.id in user_data and "current_question" in user_data[message.chat.id])
 def handle_answer(message):
     chat_id = message.chat.id
+    # prevent answering finished quiz
+    if user_data[chat_id]["current_question"] >= len(quiz):
+        print("Quiz finished")
+        return
+
     answer = message.text
+
+    # prevent double answers
+    if "answered" in user_data[chat_id]:
+        print("Already answered")
+        return
+
+    user_data[chat_id]["answered"] = True
 
     if answer not in W.ARTICLES:
         send_message(chat_id, "Invalid article")
@@ -100,6 +112,7 @@ def handle_answer(message):
             send_message(chat_id, f"❌ <b>{correct_answer} {word}</b>")
 
     user_data[chat_id]["current_question"] += 1
+    del user_data[chat_id]["answered"]
 
     if user_data[chat_id]["current_question"] < len(quiz):
         send_question(chat_id)
