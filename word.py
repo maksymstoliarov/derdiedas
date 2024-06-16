@@ -1,14 +1,21 @@
 import os
 import json
+import sys
 import requests
 import re
 from datetime import datetime
 from bs4 import BeautifulSoup
+import pandas as pd
+
+
+ARTICLES = ['der', 'die', 'das']
 
 # Path to the JSON file where messages will be saved
 JSON_FILE_PATH = 'words.json'
+BASE_WORDS_JSON_FILE_PATH = 'base_words.json'
+
 API_URL = 'https://der-artikel.de/'
-ARTICLES = ['der', 'die', 'das']
+
 base_words = []
 words = []
 chat_ids = []
@@ -25,7 +32,6 @@ def request_word(word: str):
             }
             return word_dict
 
-    print("Making http request")
     # Request the api to get the article and translation of the word
     for article in ARTICLES:
         response = requests.get(f'{API_URL}/{article}/{word}.html')
@@ -53,6 +59,37 @@ def request_word(word: str):
     return None
 
 
+def upload_base_words():
+    bw = []
+    df = pd.read_excel('words.xlsx', sheet_name='1781 Nouns')
+    for index, row in df.iterrows():
+        article, word = row.iloc[0].split(' ')
+        if article not in ARTICLES:
+            # if there is / in article, split it and check each part to be in ARTICLES, and save them as article list
+            article = article.split('/')
+            if not all([a in ARTICLES for a in article]):
+                print(f'Article not found: {article}' + ' ' + word)
+                continue
+
+            word_dict = {
+                'word': word,
+                'article': article,
+                'translation': row.iloc[1],
+            }
+            bw.append(word_dict)
+            continue
+
+        word_dict = {
+            'word': word,
+            'article': article,
+            'translation': row.iloc[1],
+        }
+        bw.append(word_dict)
+
+    with open(BASE_WORDS_JSON_FILE_PATH, 'w') as file:
+        json.dump(bw, file, indent=4)
+
+
 def load_words():
     global words, base_words
     # if words.json is absent, create it
@@ -65,15 +102,10 @@ def load_words():
             with open(JSON_FILE_PATH, 'r') as file:
                 words = json.load(file)
 
-    # if base_words.json is absent, create it
-    if not os.path.exists('base_words.json'):
-        with open('base_words.json', 'w') as file:
-            json.dump([], file)
-    else:
-        # if base_words.json is not empty, read it
-        if os.path.getsize('base_words.json') > 0:
-            with open('base_words.json', 'r') as file:
-                base_words = json.load(file)
+    upload_base_words()
+
+    with open(BASE_WORDS_JSON_FILE_PATH, 'r') as file:
+        base_words = json.load(file)
 
 
 def add_word(word_dict):
@@ -86,7 +118,7 @@ def add_word(word_dict):
 def add_word_base(word_dict):
     global base_words
     base_words.append(word_dict)
-    with open('base_words.json', 'w') as file:
+    with open(BASE_WORDS_JSON_FILE_PATH, 'w') as file:
         json.dump(base_words, file, indent=4)
 
 
@@ -150,3 +182,46 @@ def get_all_words(user_id):
 
 def get_all_base_words():
     return base_words
+
+
+def find_duplicate_base_words():
+    unique_words = []
+    duplicate_words = []
+    for w in base_words:
+        if w['word'] not in unique_words:
+            unique_words.append(w['word'])
+        else:
+            duplicate_words.append(w)
+
+    return duplicate_words
+
+
+def remove_duplicate_base_words():
+    duplicate_words = find_duplicate_base_words()
+    for w in duplicate_words:
+        base_words.remove(w)
+
+    with open(BASE_WORDS_JSON_FILE_PATH, 'w') as file:
+        json.dump(base_words, file, indent=4)
+
+
+def find_duplicate_words(user_id):
+    unique_words = []
+    duplicate_words = []
+    for w in words:
+        if w['user_id'] == user_id:
+            if w['word'] not in unique_words:
+                unique_words.append(w['word'])
+            else:
+                duplicate_words.append(w)
+
+    return duplicate_words
+
+
+def remove_duplicate_words(user_id):
+    duplicate_words = find_duplicate_words(user_id)
+    for w in duplicate_words:
+        words.remove(w)
+
+    with open(JSON_FILE_PATH, 'w') as file:
+        json.dump(words, file, indent=4)

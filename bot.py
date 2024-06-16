@@ -50,10 +50,9 @@ def quiz_command(message):
 def send_question(chat_id):
     global quiz
     all_words = W.get_all_base_words()
-    # randomize the words order
-    random.shuffle(all_words)
-    current_question = user_data[chat_id]["current_question"] + 1
+    # TODO: make progress, filter words if they already appeared in the quiz
 
+    current_question = user_data[chat_id]["current_question"] + 1
     quiz = all_words[:QUIZ_QUESTIONS]
     total_questions = len(quiz)
 
@@ -86,11 +85,19 @@ def handle_answer(message):
     correct_answer = quiz[current_question]["article"]
     word = quiz[current_question]["word"]
 
-    if answer == correct_answer:
-        user_data[chat_id]["score"] += 1
-        send_message(chat_id, f"✅ <b>{correct_answer} {word}</b>")
+    # if correct answer is array, check if the answer is in the array
+    if isinstance(correct_answer, list):
+        if answer in correct_answer:
+            user_data[chat_id]["score"] += 1
+            send_message(chat_id, f"✅ <b>{correct_answer[0]}/{correct_answer[1]} {word}</b>")
+        else:
+            send_message(chat_id, f"❌ <b>{correct_answer[0]}/{correct_answer[1]} {word}</b>")
     else:
-        send_message(chat_id, f"❌ <b>{correct_answer} {word}</b>")
+        if answer == correct_answer:
+            user_data[chat_id]["score"] += 1
+            send_message(chat_id, f"✅ <b>{correct_answer} {word}</b>")
+        else:
+            send_message(chat_id, f"❌ <b>{correct_answer} {word}</b>")
 
     user_data[chat_id]["current_question"] += 1
 
@@ -118,7 +125,11 @@ def save_message(message):
 
         # Find the word in the user words
         if existing_word:
-            send_message(message.chat.id, f'<b>{existing_word["article"]} {existing_word["word"]}</b> - {existing_word["translation"]}')
+            article = existing_word["article"]
+            if isinstance(article, list):
+                article = '/'.join(article)
+
+            send_message(message.chat.id, f'<b>{article} {existing_word["word"]}</b> - {existing_word["translation"]}')
             return
 
         # Find the word in the base words
@@ -129,27 +140,33 @@ def save_message(message):
             existing_base_word['date'] = message.date
 
             W.add_word(existing_base_word)
-            send_message(message.chat.id, f"<b>{existing_base_word['article']} {word}</b> - {existing_base_word['translation']}\n<i>learned new word</i> ✅")
+            article = existing_base_word["article"]
+            if isinstance(article, list):
+                article = '/'.join(article)
+
+            send_message(message.chat.id, f"<b>{article} {word}</b> - {existing_base_word['translation']}\n<i>learned new word</i> ✅")
             return
 
-        # Request the api to get the article and translation of the word
-        word_dict = W.request_word(word)
-
-        # If no translation found, return message to user
-        if not word_dict or not word_dict['article'] or not word_dict['translation']:
-            send_message(message.chat.id, f"{word} <i>not found</i>")
-            return
-
-        W.add_word_base(word_dict)
-
-        word_dict['user_id'] = user_id
-        word_dict['username'] = message.from_user.username
-        word_dict['date'] = message.date
-
-        W.add_word(word_dict)
-
-        # Display message to user with article and translation
-        send_message(message.chat.id, f"<b>{word_dict['article']} {word}</b> - {word_dict['translation']}\n<i>learned new word</i> ✅")
+        send_message(message.chat.id, f"{word} <i>not found</i>")
+        #
+        # # Request the api to get the article and translation of the word
+        # word_dict = W.request_word(word)
+        #
+        # # If no translation found, return message to user
+        # if not word_dict or not word_dict['article'] or not word_dict['translation']:
+        #     send_message(message.chat.id, f"{word} <i>not found</i>")
+        #     return
+        #
+        # W.add_word_base(word_dict)
+        #
+        # word_dict['user_id'] = user_id
+        # word_dict['username'] = message.from_user.username
+        # word_dict['date'] = message.date
+        #
+        # W.add_word(word_dict)
+        #
+        # # Display message to user with article and translation
+        # send_message(message.chat.id, f"<b>{word_dict['article']} {word}</b> - {word_dict['translation']}\n<i>learned new word</i> ✅")
     except Exception as e:
         send_message(message.chat.id, "Error")
         print(f'Error: {e}')
