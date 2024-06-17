@@ -44,7 +44,7 @@ def send_statistic(message):
     for mistake in m:
         if len(weakest_words) >= weakest_words_count:
             break
-        weakest_words.append(f"{mistake['count']} <b>{mistake['article']} {mistake['word']}</b> - {mistake['translation']}")
+        weakest_words.append(f"<b>{mistake['article']} {mistake['word']}</b> - {mistake['translation']}")
 
     statistic_message = f"Progress: <b>{progress_percent}</b>%\nToday learned: <b>{len(daily_words)}</b> words\nAll time learned: <b>{len(all_words)}</b> words"
 
