@@ -1,13 +1,9 @@
-.PHONY: install run-bot stop-bot
+.PHONY: run stop
 
-install:
-	@echo "Installing Python dependencies..."
-	@pip install -r requirements.txt
+run:
+	@echo "Starting with nohup..."
+	@nohup python main.py &
 
-run-bot:
-	@echo "Starting bot with nohup..."
-	@nohup python bot.py &
-
-stop-bot:
-	@echo "Stopping bot..."
-	@pkill -f "python bot.py"
+stop:
+	@echo "Stopping..."
+	@pkill -f "python main.py"
