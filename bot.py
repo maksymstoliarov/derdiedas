@@ -119,7 +119,10 @@ def handle_answer(message):
 
     answer = message.text
 
-    if answer not in W.ARTICLES:
+    # trim and lowercase the answer
+    answer = answer.strip().lower()
+
+    if not answer or answer not in W.ARTICLES:
         send_message(chat_id, "Invalid article")
         return
 
