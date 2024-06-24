@@ -23,11 +23,13 @@ def add_chat_id(chat_id: int):
 
     # check if already present
     if chat_id in chat_ids:
-        return
+        return False
 
     chat_ids.append(chat_id)
     with open(CHAT_IDS_FILE_PATH, 'w') as file:
         json.dump(chat_ids, file, indent=4)
+
+    return True
 
 
 load_chat_ids()
