@@ -119,16 +119,16 @@ def handle_answer(message):
 
     answer = message.text
 
+    if answer not in W.ARTICLES:
+        send_message(chat_id, "Invalid article")
+        return
+
     # prevent double answers
     if "answered" in user_data[chat_id]:
         print("Already answered")
         return
 
     user_data[chat_id]["answered"] = True
-
-    if answer not in W.ARTICLES:
-        send_message(chat_id, "Invalid article")
-        return
 
     current_question = user_data[chat_id]["current_question"]
     correct_answer = quiz[chat_id][current_question]["article"]
