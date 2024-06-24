@@ -27,7 +27,10 @@ def send_message(chat_id, message):
 
 @bot.message_handler(commands=['help'])
 def send_welcome(message):
-    bot.send_message(message.chat.id, "Send German word to get article and translation\n\n/start - Start quiz\n/mistakes - Review your mistakes\n/statistic - View your statistic\n\nDeveloper @max_stoliarov", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
+    # get help message from help.txt file
+    with open('help.txt', 'r') as file:
+        help_message = file.read()
+    bot.send_message(message.chat.id, help_message, reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
     stop_quiz(message.chat.id)
 
 
