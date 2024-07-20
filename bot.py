@@ -8,7 +8,6 @@ import random
 
 load_dotenv()
 
-MASTER_CHAT_ID = os.getenv('MASTER_CHAT_ID')
 bot = telebot.TeleBot(os.getenv('TELEGRAM_TOKEN'))
 quiz_mode = False
 QUIZ_QUESTIONS = 10
@@ -27,10 +26,7 @@ def send_message(chat_id, message):
 
 @bot.message_handler(commands=['help'])
 def send_welcome(message):
-    # get help message from help.txt file
-    with open('help.txt', 'r') as file:
-        help_message = file.read()
-    bot.send_message(message.chat.id, help_message, reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
+    bot.send_message(message.chat.id, "Send German word to get article and translation\n\n/start - Start quiz\n/mistakes - Review your mistakes\n/statistic - View your statistic\n\nDeveloper @max_stoliarov", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
     stop_quiz(message.chat.id)
 
 
@@ -67,10 +63,6 @@ def quiz_command(message):
     user_data[chat_id] = {"current_question": 0, "score": 0, 'mistakes': False}
     quiz[chat_id] = W.get_quiz_words(chat_id, QUIZ_QUESTIONS)
     send_question(chat_id)
-
-    is_new = chat.add_chat_id(chat_id)
-    if is_new and chat_id != MASTER_CHAT_ID:
-        send_message(MASTER_CHAT_ID, f"New user. ID: {chat_id}. Username: {message.from_user.username}")
 
 
 # Mistakes quiz command handler

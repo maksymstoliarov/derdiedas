@@ -1,1 +1,0 @@
-Send German word to get article and translation\n\n/start - Start quiz\n/mistakes - Review your mistakes\n/statistic - View your statistic\n\nDeveloper @max_stoliarov
