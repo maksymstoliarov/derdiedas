@@ -181,7 +181,7 @@ def handle_answer(message):
             finish_message = "Quiz finished"
         else:
             finish_message = "Mistakes review finished"
-        bot.send_message(chat_id, f"{finish_message}! Your score is <b>{score}/{len(quiz[chat_id])}</b>", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
+        bot.send_message(chat_id, f"{finish_message}! Your score is <b>{score}/{len(quiz[chat_id])}</b>. Want /start again?", reply_markup=types.ReplyKeyboardRemove(), parse_mode='HTML')
         stop_quiz(chat_id)
 
 
